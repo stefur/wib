@@ -1,7 +1,7 @@
 # wib - Wayland Idle Blocker
 
 wib prevents your user session from idling on Wayland, stopping screen blanking, locking, etc.  
-Easily toggle the idle inhibition on/off using a signal.
+You can easily toggle the idle inhibition on/off using a signal. The inhibitors current state ("activated" or "deactivated") is printed so that you can easily integrate it with scripts or other tools.
 
 ## Usage
 
