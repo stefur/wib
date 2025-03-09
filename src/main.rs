@@ -87,7 +87,6 @@ Options:
     // TODO: Not sure this is needed or if it has any implications if omitted
     layer_surface.set_exclusive_zone(-1);
 
-    surface.commit();
     event_queue.roundtrip(&mut client)?;
 
     // Create a buffer
