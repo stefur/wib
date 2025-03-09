@@ -4,31 +4,11 @@ use signal_hook::iterator::Signals;
 use std::error::Error;
 use std::os::fd::AsFd;
 use wayland_client::Connection;
-use wayland_client::QueueHandle;
-use wayland_client::protocol::wl_buffer::WlBuffer;
-use wayland_client::protocol::wl_shm::{Format, WlShm};
+use wayland_client::protocol::wl_shm::Format;
 use wayland_protocols::wp::idle_inhibit::zv1::client::zwp_idle_inhibitor_v1::ZwpIdleInhibitorV1;
 use wayland_protocols_wlr::layer_shell::v1::client::zwlr_layer_shell_v1::Layer::Background;
 use wayland_protocols_wlr::layer_shell::v1::client::zwlr_layer_surface_v1::Anchor;
 mod client;
-
-/// Creates a dummy buffer user for the inhibitor layer surface.
-fn create_dummy_buffer(shm: &WlShm, queue_handle: &QueueHandle<Client>) -> WlBuffer {
-    let width = 1;
-    let height = 1;
-    let stride = width * 4;
-    let size = height * stride;
-
-    let memfd = MemfdOptions::default()
-        .create("dummy_buffer")
-        .expect("Failed to create dummy buffer.");
-    let file = memfd.into_file();
-
-    let pool = shm.create_pool(file.as_fd(), size, queue_handle, ());
-    let buffer = pool.create_buffer(0, width, height, stride, Format::Argb8888, queue_handle, ());
-    pool.destroy();
-    buffer
-}
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
@@ -75,7 +55,7 @@ Options:
 
     let mut client = Client::new();
 
-    event_queue.roundtrip(&mut client).ok();
+    event_queue.roundtrip(&mut client)?;
 
     // Create a surface
     let surface = client
@@ -102,25 +82,48 @@ Options:
     layer_surface.set_size(1, 1);
 
     // Set anchors
-    layer_surface.set_anchor(Anchor::Top | Anchor::Left);
+    layer_surface.set_anchor(Anchor::Top & Anchor::Left);
 
     // TODO: Not sure this is needed or if it has any implications if omitted
     layer_surface.set_exclusive_zone(-1);
 
     surface.commit();
-    event_queue.roundtrip(&mut client).ok();
+    event_queue.roundtrip(&mut client)?;
 
-    let dummy_buffer = create_dummy_buffer(
-        client
+    // Create a buffer
+    let buffer = {
+        let width = 1;
+        let height = 1;
+        let stride = width * 4;
+        let size = height * stride;
+
+        let memfd = MemfdOptions::default()
+            .create("wib")
+            .expect("Failed to create memfd-backed file descriptor.");
+        let file = memfd.into_file();
+
+        let pool = client
             .wl_shm
             .as_ref()
-            .expect("Failed to create a dummy buffer for the surface."),
-        &queue_handle,
-    );
-    surface.attach(Some(&dummy_buffer), 0, 0);
+            .expect("wl_shm was None when attempting to create a pool.")
+            .create_pool(file.as_fd(), size, &queue_handle, ());
+        let buffer = pool.create_buffer(
+            0,
+            width,
+            height,
+            stride,
+            Format::Argb8888,
+            &queue_handle,
+            (),
+        );
+        pool.destroy();
+        buffer
+    };
+
+    surface.attach(Some(&buffer), 0, 0);
 
     surface.commit();
-    event_queue.roundtrip(&mut client).ok();
+    event_queue.roundtrip(&mut client)?;
 
     let mut inhibitor: Option<ZwpIdleInhibitorV1> = None;
     println!("deactivated");
@@ -150,7 +153,7 @@ Options:
             _ => unreachable!(),
         }
 
-        event_queue.roundtrip(&mut client).ok();
+        event_queue.roundtrip(&mut client)?;
     }
     println!("quitting");
     // Cleanup: destroy the surface and any inhibitor before exiting
@@ -159,6 +162,6 @@ Options:
     }
     layer_surface.destroy();
     surface.destroy();
-    event_queue.roundtrip(&mut client).ok();
+    event_queue.roundtrip(&mut client)?;
     Ok(())
 }
