@@ -82,11 +82,9 @@ Options:
     layer_surface.set_size(1, 1);
 
     // Set anchors
-    layer_surface.set_anchor(Anchor::Top & Anchor::Left);
+    layer_surface.set_anchor(Anchor::Top | Anchor::Left);
 
-    // TODO: Not sure this is needed or if it has any implications if omitted
-    layer_surface.set_exclusive_zone(-1);
-
+    surface.commit();
     event_queue.roundtrip(&mut client)?;
 
     // Create a buffer
@@ -120,7 +118,6 @@ Options:
     };
 
     surface.attach(Some(&buffer), 0, 0);
-
     surface.commit();
     event_queue.roundtrip(&mut client)?;
 
