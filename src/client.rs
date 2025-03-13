@@ -1,5 +1,5 @@
 use wayland_client::{
-    Connection, Dispatch, Proxy, QueueHandle,
+    Connection, Dispatch, Proxy, QueueHandle, delegate_noop,
     protocol::{
         wl_buffer::WlBuffer,
         wl_compositor::WlCompositor,
@@ -31,6 +31,14 @@ impl Client {
             inhibit_manager: None,
             wl_shm: None,
             layer_shell: None,
+        }
+    }
+    pub fn destroy_all(&mut self) {
+        if let Some(layer_shell) = self.layer_shell.take() {
+            layer_shell.destroy();
+        }
+        if let Some(inhibit_manager) = self.inhibit_manager.take() {
+            inhibit_manager.destroy();
         }
     }
 }
@@ -107,97 +115,13 @@ impl Dispatch<ZwlrLayerSurfaceV1, ()> for Client {
     }
 }
 
-impl Dispatch<ZwlrLayerShellV1, ()> for Client {
-    fn event(
-        _: &mut Self,
-        _: &ZwlrLayerShellV1,
-        _: <ZwlrLayerShellV1 as Proxy>::Event,
-        _: &(),
-        _: &Connection,
-        _: &QueueHandle<Self>,
-    ) {
-    }
-}
+delegate_noop!(Client: ZwlrLayerShellV1);
 
-impl Dispatch<WlSurface, ()> for Client {
-    fn event(
-        _: &mut Self,
-        _: &WlSurface,
-        _: <WlSurface as Proxy>::Event,
-        _: &(),
-        _: &Connection,
-        _: &QueueHandle<Self>,
-    ) {
-    }
-}
+delegate_noop!(Client: ZwpIdleInhibitManagerV1);
+delegate_noop!(Client: ZwpIdleInhibitorV1);
 
-impl Dispatch<WlCompositor, ()> for Client {
-    fn event(
-        _: &mut Self,
-        _: &WlCompositor,
-        _: <WlCompositor as Proxy>::Event,
-        _: &(),
-        _: &Connection,
-        _: &QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<WlShmPool, ()> for Client {
-    fn event(
-        _: &mut Self,
-        _: &WlShmPool,
-        _: <WlShmPool as Proxy>::Event,
-        _: &(),
-        _: &Connection,
-        _: &QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<WlShm, ()> for Client {
-    fn event(
-        _: &mut Self,
-        _: &WlShm,
-        _: <WlShm as Proxy>::Event,
-        _: &(),
-        _: &Connection,
-        _: &QueueHandle<Self>,
-    ) {
-    }
-}
-impl Dispatch<WlBuffer, ()> for Client {
-    fn event(
-        _: &mut Self,
-        _: &WlBuffer,
-        _: <WlBuffer as Proxy>::Event,
-        _: &(),
-        _: &Connection,
-        _: &QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<ZwpIdleInhibitManagerV1, ()> for Client {
-    fn event(
-        _: &mut Self,
-        _: &ZwpIdleInhibitManagerV1,
-        _: <ZwpIdleInhibitManagerV1 as Proxy>::Event,
-        _: &(),
-        _: &Connection,
-        _: &QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<ZwpIdleInhibitorV1, ()> for Client {
-    fn event(
-        _: &mut Self,
-        _: &ZwpIdleInhibitorV1,
-        _: <ZwpIdleInhibitorV1 as Proxy>::Event,
-        _: &(),
-        _: &Connection,
-        _: &QueueHandle<Self>,
-    ) {
-    }
-}
+delegate_noop!(Client: ignore WlSurface);
+delegate_noop!(Client: WlCompositor);
+delegate_noop!(Client: WlShmPool);
+delegate_noop!(Client: ignore WlShm);
+delegate_noop!(Client: ignore WlBuffer);

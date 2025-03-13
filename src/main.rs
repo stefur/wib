@@ -1,12 +1,13 @@
 use crate::client::Client;
 use memfd::MemfdOptions;
+use signal_hook::consts::{SIGINT, SIGQUIT, SIGTERM, SIGUSR1};
 use signal_hook::iterator::Signals;
 use std::error::Error;
 use std::os::fd::AsFd;
 use wayland_client::Connection;
 use wayland_client::protocol::wl_shm::Format;
 use wayland_protocols::wp::idle_inhibit::zv1::client::zwp_idle_inhibitor_v1::ZwpIdleInhibitorV1;
-use wayland_protocols_wlr::layer_shell::v1::client::zwlr_layer_shell_v1::Layer::Background;
+use wayland_protocols_wlr::layer_shell::v1::client::zwlr_layer_shell_v1::Layer::Overlay;
 use wayland_protocols_wlr::layer_shell::v1::client::zwlr_layer_surface_v1::Anchor;
 mod client;
 
@@ -36,10 +37,10 @@ Options:
     }
 
     let mut signals = Signals::new([
-        signal_hook::consts::SIGUSR1, // For toggling the inhibitor
-        signal_hook::consts::SIGTERM, // For quit
-        signal_hook::consts::SIGINT,  // For quit
-        signal_hook::consts::SIGQUIT, // Also for quit
+        SIGUSR1, // For toggling the inhibitor
+        SIGTERM, // For quit
+        SIGINT,  // For quit
+        SIGQUIT, // Also for quit
     ])?;
 
     // Connect to the Wayland server
@@ -71,8 +72,8 @@ Options:
         .expect("Failed to create a layer surface.")
         .get_layer_surface(
             &surface,
-            None, // TODO: Will this work with multiple outputs?
-            Background,
+            None,
+            Overlay,
             String::from("wib"),
             &queue_handle,
             (),
@@ -126,7 +127,7 @@ Options:
 
     for signal in signals.forever() {
         match signal {
-            signal_hook::consts::SIGUSR1 => {
+            SIGUSR1 => {
                 if let Some(inhibitor) = inhibitor.take() {
                     inhibitor.destroy();
                     println!("deactivated");
@@ -141,9 +142,7 @@ Options:
                     println!("activated");
                 }
             }
-            signal_hook::consts::SIGTERM
-            | signal_hook::consts::SIGINT
-            | signal_hook::consts::SIGQUIT => {
+            SIGTERM | SIGINT | SIGQUIT => {
                 break;
             }
             _ => unreachable!(),
@@ -153,11 +152,13 @@ Options:
     }
     println!("quitting");
     // Cleanup: destroy the surface and any inhibitor before exiting
-    if let Some(inhibitor) = inhibitor {
+    if let Some(inhibitor) = inhibitor.take() {
         inhibitor.destroy();
     }
     layer_surface.destroy();
     surface.destroy();
+    buffer.destroy();
+    client.destroy_all();
     event_queue.roundtrip(&mut client)?;
     Ok(())
 }
