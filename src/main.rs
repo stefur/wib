@@ -1,14 +1,17 @@
 use crate::client::Client;
-use memfd::MemfdOptions;
+use nix::sys::memfd::{MemFdCreateFlag, memfd_create};
+use nix::unistd::ftruncate;
 use signal_hook::consts::{SIGINT, SIGQUIT, SIGTERM, SIGUSR1};
 use signal_hook::iterator::Signals;
 use std::error::Error;
+use std::ffi::CString;
 use std::os::fd::AsFd;
 use wayland_client::Connection;
 use wayland_client::protocol::wl_shm::Format;
 use wayland_protocols::wp::idle_inhibit::zv1::client::zwp_idle_inhibitor_v1::ZwpIdleInhibitorV1;
 use wayland_protocols_wlr::layer_shell::v1::client::zwlr_layer_shell_v1::Layer::Overlay;
 use wayland_protocols_wlr::layer_shell::v1::client::zwlr_layer_surface_v1::Anchor;
+
 mod client;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -94,17 +97,20 @@ Options:
         let height = 1;
         let stride = width * 4;
         let size = height * stride;
+        let name = CString::new("wib").expect("Failed to create CString.");
 
-        let memfd = MemfdOptions::default()
-            .create("wib")
-            .expect("Failed to create memfd-backed file descriptor.");
-        let file = memfd.into_file();
+        // Create a memfd
+        let fd = memfd_create(&name, MemFdCreateFlag::empty())
+            .expect("Failed to create file descriptor");
+
+        // Truncate the file descriptor
+        ftruncate(&fd, size as i64).expect("Truncating the file descriptor failed.");
 
         let pool = client
             .wl_shm
             .as_ref()
             .expect("wl_shm was None when attempting to create a pool.")
-            .create_pool(file.as_fd(), size, &queue_handle, ());
+            .create_pool(fd.as_fd(), size, &queue_handle, ());
         let buffer = pool.create_buffer(
             0,
             width,

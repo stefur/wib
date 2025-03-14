@@ -2,7 +2,7 @@
 
 wib prevents your user session from idling by disabling screen blanking, locking, and other idle behaviors - essentially providing a “presentation mode".
   
-It's usable with Wayland compositors implementing the *layer-shell* protocol.  
+It's usable with Wayland compositors implementing the *wlr-layer-shell* protocol. wib has been tested with `river`, `sway`, `niri` and `hyprland`.  
 You can toggle the idle inhibition on/off using `SIGUSR1`. The current state ("activated" or "deactivated") is printed so that you can easily integrate it with scripts or other tools.
 
 ## Usage

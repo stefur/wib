@@ -16,7 +16,6 @@ use wayland_protocols_wlr::layer_shell::v1::client::{
     zwlr_layer_shell_v1::ZwlrLayerShellV1, zwlr_layer_surface_v1::ZwlrLayerSurfaceV1,
 };
 
-#[derive(Debug)]
 pub struct Client {
     pub compositor: Option<WlCompositor>,
     pub inhibit_manager: Option<ZwpIdleInhibitManagerV1>,
