@@ -57,38 +57,24 @@ impl Dispatch<WlRegistry, ()> for Client {
             version,
         } = event
         {
-            match interface.as_str() {
-                "wl_compositor" => {
-                    state.compositor = Some(registry.bind::<WlCompositor, _, Self>(
-                        name,
-                        version,
-                        queue_handle,
-                        (),
-                    ));
-                }
-                "zwp_idle_inhibit_manager_v1" => {
-                    state.inhibit_manager =
-                        Some(registry.bind::<ZwpIdleInhibitManagerV1, _, Self>(
-                            name,
-                            version,
-                            queue_handle,
-                            (),
-                        ));
-                }
-                "zwlr_layer_shell_v1" => {
-                    state.layer_shell = Some(registry.bind::<ZwlrLayerShellV1, _, Self>(
-                        name,
-                        version,
-                        queue_handle,
-                        (),
-                    ));
-                }
-                "wl_shm" => {
-                    state.wl_shm =
-                        Some(registry.bind::<WlShm, _, Self>(name, version, queue_handle, ()));
-                }
-
-                _ => {}
+            if interface == WlCompositor::interface().name && version >= 6 {
+                state.compositor =
+                    Some(registry.bind::<WlCompositor, _, Self>(name, 6, queue_handle, ()));
+            }
+            if interface == ZwpIdleInhibitManagerV1::interface().name && version >= 1 {
+                state.inhibit_manager = Some(registry.bind::<ZwpIdleInhibitManagerV1, _, Self>(
+                    name,
+                    1,
+                    queue_handle,
+                    (),
+                ));
+            }
+            if interface == ZwlrLayerShellV1::interface().name && version >= 4 {
+                state.layer_shell =
+                    Some(registry.bind::<ZwlrLayerShellV1, _, Self>(name, 4, queue_handle, ()));
+            }
+            if interface == WlShm::interface().name && version >= 2 {
+                state.wl_shm = Some(registry.bind::<WlShm, _, Self>(name, 2, queue_handle, ()));
             }
         }
     }
