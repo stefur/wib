@@ -1,5 +1,7 @@
 # wib - Wayland Idle Blocker
 
+[![codeberg](https://img.shields.io/badge/codeberg-repo-blue?logo=codeberg)](https://codeberg.org/stefur/wib)
+
 wib prevents your user session from idling by disabling screen blanking, locking, and other idle behaviors - essentially providing a “presentation mode".
   
 It's usable with Wayland compositors implementing the *wlr-layer-shell* protocol. wib has been tested with `river`, `sway`, `niri` and `hyprland`.  
